@@ -987,7 +987,6 @@ display_main_menu() {
     echo -e "${YELLOW}5. ${RED}Exit${RESET}"
 }
 
-# Function to handle shell selection
 select_shell() {
     local shells=("$@")
     local selected=0
@@ -1017,27 +1016,27 @@ select_shell() {
         read -s -n 3 key
 
         case "$key" in
-            $'\e[A') # Up arrow
+            $'\e[A') 
                 ((selected--))
                 [[ $selected -lt $start ]] && selected=$((end - 1))
                 ;;
-            $'\e[B') # Down arrow
+            $'\e[B') 
                 ((selected++))
                 [[ $selected -ge $end ]] && selected=$start
                 ;;
-            $'\e[D') # Left arrow
+            $'\e[D')
                 if ((page > 0)); then
                     ((page--))
                     selected=$((page * page_size))
                 fi
                 ;;
-            $'\e[C') # Right arrow
+            $'\e[C') 
                 if ((page < total_pages)); then
                     ((page++))
                     selected=$((page * page_size))
                 fi
                 ;;
-            '') # Enter key
+            '') 
                 echo "You selected: ${shells[$selected]}"
                 generate_shell "$current_type" "${shells[$selected]}"
                 read -p "Press any key to continue..."
@@ -1077,7 +1076,6 @@ get_file_extension() {
     esac
 }
 
-# Function to generate and output the shell
 generate_shell() {
     local shell_type=$1
     local shell_name=$2
