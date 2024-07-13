@@ -17,6 +17,7 @@ G=$(tput setaf 2)
 RD=$(tput setaf 1)
 B=$(tput setaf 4)
 C=$(tput setaf 6)
+BOLD=$(tput bold)
 
 center() {
     local text="$1"
@@ -30,7 +31,7 @@ if [ $# -eq 0 ]; then
 fi
 
 tgt="$1"
-to=5
+to=4
 max_p=100  # Concurrent processes
 udp=false
 [[ "$2" == "-u" ]] && udp=true
@@ -78,14 +79,14 @@ detailed_info() {
                 ssh|22)
                     ssh_conf $p
                     ;;
-                http|80|8080)
-                   http_info=$(curl -sI -m $to "http://$tgt:$p")
+                http|http-alt|80|8080)
+                   http_info=$(curl -sI $to "http://$tgt:$p")
                    robots_content=$(curl -sL -m $to "http://$tgt:$p/robots.txt")
 
                     ;;
-                https|443|8443)
-                   http_info=$(curl -sI -m $to "http://$tgt:$p")
-                   robots_content=$(curl -sL -m $to "http://$tgt:$p/robots.txt")
+                https|https-alt|443|8443)
+                   http_info=$(curl -sI  $to "https://$tgt:$p")
+                   robots_content=$(curl -sL -m $to "https://$tgt:$p/robots.txt")
 
                     ;;
                 ftp|21)
@@ -142,14 +143,12 @@ EOF
                     if [ ! -z "$service_info" ]; then
                         service_info="${C}Service Info: $service_info${R}"
                     else
-                        center "${RD}Unable to retrieve specific service info${R}"
+                        service_info="${RD}Unable to retrieve specific service info${R}"
                     fi
                     ;;
             esac
             ;;
-        *)
-            center "${RD}Unsupported protocol: $proto${R}"
-            ;;
+
     esac
     echo " ";
     center "${B}Port: $p${R}"
@@ -162,17 +161,22 @@ EOF
 if  [ ! -z "$svc" ];then
  center "${C}Service Info: $svc${R}"
 fi
-if [ ! -z "$ver_info" ]; then
-    center "${M}Version Info: $ver_info${R}"
-fi
+# if [ ! -z "$ver_info" ]; then
+#     center "${M}Version Info: $ver_info${R}"
+# fi
 
-    [ ! -z "$ssl_info" ] && center "${C}SSL Info: $ssl_info${R}"
+[ ! -z "$ssl_info" ] && center "${C}SSL Info: $ssl_info${R}"
 if [ ! -z "$http_info" ]; then
-    center "${B}HTTP Info: $http_info${R}"
+    center "${B}HTTP Info:${R}"
+        f=$(echo "$http_info" | head -n 1)
+        s=$(echo "$http_info" | grep -i '^server:' | awk -F: '{print $2}' | xargs)
+    center "${C} HTTP VERSION :${BOLD} $f"
+    center "${C} SERVER : ${BOLD} $s"
+
 fi
     # [ ! -z "$service_info" ] && center "${C}Service Info: $service_info${R}"
 
-    if [[ "$svc" == "https" || "$svc" == "http" ]]; then
+    if [[ "$svc" == "https" || "$svc" == "http" || "$svc" == "http-alt" || "$svc" == "https-alt" ]]; then
         if [ ! -z "$robots_content" ]; then
             center "${M}robots.txt content:${R}"
             center  "$robots_content" | sed 's/^//'
@@ -188,7 +192,7 @@ scan() {
     local p=$1 proto=$2
     if timeout $to bash -c "echo >/dev/$proto/$tgt/$p" 2>/dev/null ||
        nc -z -w $to $tgt $p 2>/dev/null; then
-        center "${G}$p open ($proto)${R}"
+        center "Port ${G}${BOLD}$p is open ${R}"
         detailed_info $p $proto
     fi
 }
@@ -221,7 +225,7 @@ wait
 
 center "${B}Scanning remaining TCP ports (1-65535)...${R}"
 for ((p=1; p<=65535; p++)); do
-    if ! [[ " ${common_ports[@]} " =~ " ${p} " ]]; then
+    if [[ ! " ${common_ports[*]} " =~ " ${p} " ]]; then
         scan $p "tcp" &
         while [ $(jobs -r | wc -l) -ge $max_p ]; do
             sleep 0.1
