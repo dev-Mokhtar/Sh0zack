@@ -1,5 +1,5 @@
 #!/bin/bash
-
+PROMPT="sh0zack >"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -9,11 +9,19 @@ CYAN='\033[0;36m'
 RESET='\033[0m'
 BOLD='\033[1m'
 NORMAL='\033[0m'
-complete_path() {
+cmd_ulach() {
+    if ! command -v "$1" &> /dev/null; then
+        echo -e "${BOLD}${RED}Error: $1 command not found. Please install it.${RESET}"
+#         echo -e $(apt search $1 ||  snap search $1) # if u wanna expose availbale ones
+        return 1
+    fi
+    return 0
+}
+path() {
     local IFS=$'\n'
     COMPREPLY=($(compgen -f -- "${COMP_WORDS[COMP_CWORD]}"))
 }
-complete -F complete_path read
+complete -F path read
 display_main_menu() {
     clear
     echo -e "${MAGENTA}╔══════════════════════════════════╗${RESET}"
@@ -27,9 +35,9 @@ display_main_menu() {
     echo -e "${YELLOW}5. ${GREEN}${BOLD} Listener${RESET}"
     echo -e "${YELLOW}6. ${GREEN}${BOLD} Privilege Escalation Check${RESET}"
     echo -e "${YELLOW}7. ${GREEN}${BOLD} Shell Generator${RESET}"
-    echo -e "${YELLOW}8. ${GREEN}${BOLD} Monitor Cronjob${RESET}"
-
-    echo -e "${YELLOW}9. ${RED}${BOLD} Exit${RESET}"
+    echo -e "${YELLOW}8. ${GREEN}${BOLD} Decrypting tools ${RESET}"
+     echo -e "${YELLOW}9. ${GREEN}${BOLD} Web Scanner${RESET} "
+    echo -e "${YELLOW}10 ${RED}${BOLD} Exit${RESET}"
     echo ""
 }
 
@@ -43,10 +51,12 @@ run_port_scanner() {
 
     read -p "Enter target: " target
     if [ "$tool_choice" -eq 1 ]; then
+        cmd_ulach "nmap" || return
         echo -e "${BLUE}Example Nmap usage: nmap -sV -p 1-65535 $target${RESET}"
         read -p "Enter Nmap command options: " nmap_options
         nmap $nmap_options $target
     elif [ "$tool_choice" -eq 2 ]; then
+        cmd_ulach "rustscan" || return
         echo -e "${BLUE}Example Rustscan usage: rustscan -a $target --ulimit 5000 -- -sV${RESET}"
         read -p "Enter Rustscan command options: " rustscan_options
         rustscan $rustscan_options $target
@@ -99,7 +109,7 @@ run_dns_scanner() {
     fi
 
     case $tool_choice in
-        1)
+        1)  cmd_ulach "gobuster" || return;
             echo -e "${BLUE}Running Gobuster...${RESET}"
             echo -e "${BLUE}Your Gobuster usage: gobuster dns -d $url -w $wordlist${RESET}"
             gobuster dns -d "$url" -w "$wordlist"
@@ -177,11 +187,12 @@ run_dir_scanner() {
 
     case $tc in
         1)
+            cmd_ulach "gobuster" || return;
             echo -e "${BLUE}Running Gobuster...${RESET}"
             echo -e "${BLUE}Your Gobuster usage: gobuster dir -u $url -w $wl${RESET}"
             gobuster dir -u "$url" -w "$wl"
             ;;
-        2)
+        2)  cmd_ulach "wfuzz" || return;
             echo -e "${BLUE}Running WFuzz...${RESET}"
             echo -e "${BLUE}Your WFuzz usage: wfuzz -c -z file,$wl --hc 404 $url/FUZZ${RESET}"
             wfuzz -c -z file,$wl --hc 404 "$url/FUZZ"
@@ -227,6 +238,7 @@ run_brute_force() {
     read -e -p "Enter path to output file (optional): " output_file
 
     if [ "$tool_choice" -eq 1 ]; then
+        cmd_ulach "hydra" || return;
         echo -e "${BLUE}Example Hydra usage: hydra -L $user_wordlist -P $pass_wordlist -t $threads $service://$target${RESET}"
         hydra -L $user_wordlist -P $pass_wordlist -t $threads $service://$target
     elif [ "$tool_choice" -eq 2 ]; then
@@ -252,25 +264,168 @@ run_shell_generator() {
     ./tools/shell-generator.sh
 }
 
-run_monitor_cronjob() {
-    echo -e "${YELLOW}Monitor Cronjob${RESET}"
-    ./tools/monitor-cronjob.sh
+run_web_scanner() {
+    echo -e "${YELLOW}Web Scanner${RESET}"
+    read -p "Enter the target website URL: " web_target
+
+    echo -e "${YELLOW}Choose web scanning tool:${RESET}"
+    echo -e "${GREEN}1. Nikto${RESET}"
+    echo -e "${GREEN}2. OWASP ZAP (command line)${RESET}"
+    echo -e "${GREEN}3. Skipfish${RESET}"
+    echo -e "${GREEN}4. WPScan (WordPress)${RESET}"
+    echo -e "${GREEN}5. CMSmap (WordPress and other CMS)${RESET}"
+    read -p "Enter your choice: " web_tool_choice
+
+    case $web_tool_choice in
+        1)
+            echo -e "${BLUE}Running Nikto...${RESET}"
+            cmd_ulach "nikto" || return;
+            nikto -h "$web_target"
+            ;;
+        2)
+            echo -e "${BLUE}Running OWASP ZAP...${RESET}"
+            cmd_ulach "zap-cli" || return;
+            zap-cli quick-scan -s all -r "$web_target"
+            ;;
+        3)
+            echo -e "${BLUE}Running Skipfish...${RESET}"
+            cmd_ulach "skipfish" || return;
+            read -p "Enter output directory: " output_dir
+            skipfish -o "$output_dir" "$web_target"
+            ;;
+        4)
+            echo -e "${BLUE}Running WPScan...${RESET}"
+            echo -e "${YELLOW}Note: This is specific to WordPress sites.${RESET}"
+            cmd_ulach "wpscan" || return;
+            wpscan --url "$web_target" --enumerate p,t,u
+            ;;
+        5)
+            echo -e "${BLUE}Running CMSmap...${RESET}"
+            echo -e "${YELLOW}Note: This works for WordPress and other CMS.${RESET}"
+            cmd_ulach "cmsmap" || return;
+            cmsmap "$web_target"
+            ;;
+        *)
+            echo -e "${RED}Invalid option.${RESET}"
+            ;;
+    esac
 }
+
+run_decrypte() {
+    echo -e "${YELLOW}Decrypting tools${RESET}"
+    echo -e "${YELLOW}Choose decryption method:${RESET}"
+    echo -e "${GREEN}1. Base64${RESET}"
+    echo -e "${GREEN}2. Base32${RESET}"
+    echo -e "${GREEN}3. Base85${RESET}"
+    echo -e "${GREEN}4. Base58${RESET}"
+    echo -e "${GREEN}5. Vigenère${RESET}"
+    echo -e "${GREEN}6. ROT13${RESET}"
+    echo -e "${GREEN}7. ROT47${RESET}"
+    echo -e "${GREEN}8. Binary to Text${RESET}"
+    echo -e "${GREEN}9. Hexadecimal to Text${RESET}"
+    read -p "Enter your choice: " decrypt_choice
+
+    case $decrypt_choice in
+        1)
+            read -p "Enter Base64 string to decrypt: " base64_input
+            cmd_ulach "bas64" || return;
+            echo -n "$base64_input" | base64 -d
+            ;;
+        2)
+            read -p "Enter Base32 string to decrypt: " base32_input
+            cmd_ulach "base32" || return;
+            echo -n "$base32_input" | base32 -d
+            ;;
+        3)
+            read -p "Enter Base85 string to decrypt: " base85_input
+            cmd_ulach "base85" || return;
+            echo -n "$base85_input" | base85 -d
+            ;;
+        4)
+            read -p "Enter Base58 string to decrypt: " base58_input
+            cmd_ulach "base58" || return;
+            python3 -c "
+import base58
+print(base58.b58decode('$base58_input').decode())
+"
+            ;;
+        5)
+            read -p "Enter Vigenère encrypted text: " vigenere_input
+            read -p "Enter Vigenère key: " vigenere_key
+            python3 -c "
+import sys
+
+def vigenere_decrypt(ciphertext, key):
+    plaintext = ''
+    key_length = len(key)
+    for i, char in enumerate(ciphertext):
+        if char.isalpha():
+            shift = ord(key[i % key_length].upper()) - ord('A')
+            if char.isupper():
+                plaintext += chr((ord(char) - shift - 65) % 26 + 65)
+            else:
+                plaintext += chr((ord(char) - shift - 97) % 26 + 97)
+        else:
+            plaintext += char
+    return plaintext
+
+ciphertext = '$vigenere_input'
+key = '$vigenere_key'
+print(vigenere_decrypt(ciphertext, key))
+"
+            ;;
+        6)
+            read -p "Enter ROT13 string to decrypt: " rot13_input
+            echo "$rot13_input" | tr 'A-Za-z' 'N-ZA-Mn-za-m'
+            ;;
+        7)
+            read -p "Enter ROT47 string to decrypt: " rot47_input
+            python3 -c "
+import codecs
+print(codecs.decode('$rot47_input', 'rot47'))
+"
+            ;;
+        8)
+            read -p "Enter binary string to decrypt (space-separated): " binary_input
+            python3 -c "
+binary = '$binary_input'.split()
+text = ''.join([chr(int(byte, 2)) for byte in binary])
+print(text)
+"
+            ;;
+        9)
+            read -p "Enter hexadecimal string to decrypt: " hex_input
+            python3 -c "
+hex_string = '$hex_input'
+text = bytes.fromhex(hex_string).decode('utf-8')
+print(text)
+"
+            ;;
+        *)
+            echo -e "${RED}Invalid option.${RESET}"
+            ;;
+    esac
+
+
+}
+    display_main_menu
 
 while true; do
     display_main_menu
-    read -p "Enter your choice: " choice
+    echo -en "${CYAN}${PROMPT}${RESET}"
+    read -p " " choice
 
     case $choice in
-        1) run_port_scanner ;;
-        2) run_dns_scanner ;;
-        3) run_dir_scanner ;;
-        4) run_brute_force ;;
-        5) run_listener ;;
-        6) run_privesc_check ;;
-        7) run_shell_generator ;;
-        8) run_monitor_cronjob ;;
-        9) echo -e "${RED}Exiting Shozack !!!${RESET}"; exit 0 ;;
+        1|port) run_port_scanner ;;
+        2|dns) run_dns_scanner ;;
+        3|dir) run_dir_scanner ;;
+        4|brute) run_brute_force ;;
+        5|listen) run_listener ;;
+        6|privesc) run_privesc_check ;;
+        7|shell) run_shell_generator ;;
+        8|cron) run_decrypte ;;
+        9|web) run_web_scanner;;
+        10|exit|quit) echo -e "${RED}Exiting Shozack !!!${RESET}"; exit 0 ;;
         *) echo -e "${RED}Invalid option. Repeat your choice.${RESET}" ;;
     esac
 

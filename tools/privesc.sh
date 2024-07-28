@@ -156,6 +156,10 @@ ls -alhR /srv/www/htdocs/ 2>/dev/null
 ls -alhR /usr/local/www/apache22/data/
 ls -alhR /opt/lampp/htdocs/ 2>/dev/null
 spacer
+green "Mail Files":
+
+ls -alRh /var/mail
+spacer
 blue "Backups:"
 find /var /etc /bin /sbin /home /usr/local/bin /usr/local/sbin /usr/bin /usr/games /usr/sbin /root /tmp -type f \( -name "*backup*" -o -name "*.bak" -o -name "*.bck" -o -name "*.bk" \) 2>/dev/null
 
