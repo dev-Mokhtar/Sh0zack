@@ -314,10 +314,10 @@ run_web_scanner() {
 run_decrypte() {
     echo -e "${YELLOW}Decrypting tools${RESET}"
     echo -e "${YELLOW}Choose decryption method:${RESET}"
-    echo -e "${GREEN}1. Base64${RESET}"
-    echo -e "${GREEN}2. Base32${RESET}"
-    echo -e "${GREEN}3. Base85${RESET}"
-    echo -e "${GREEN}4. Base58${RESET}"
+    echo -e "${GREEN}1. FROM Base64${RESET}"
+    echo -e "${GREEN}2. FROM Base32${RESET}"
+    echo -e "${GREEN}3. FROM Base85${RESET}"
+    echo -e "${GREEN}4. FROM Base58${RESET}"
     echo -e "${GREEN}5. Vigenère${RESET}"
     echo -e "${GREEN}6. ROT13${RESET}"
     echo -e "${GREEN}7. ROT47${RESET}"
@@ -355,23 +355,23 @@ print(base58.b58decode('$base58_input').decode())
             python3 -c "
 import sys
 
-def vigenere_decrypt(ciphertext, key):
-    plaintext = ''
-    key_length = len(key)
-    for i, char in enumerate(ciphertext):
+def vigenere_decrypt(ct, key):
+    pt = ''
+    l = len(key)
+    for i, char in enumerate(ct):
         if char.isalpha():
-            shift = ord(key[i % key_length].upper()) - ord('A')
+            shift = ord(key[i % l].upper()) - ord('A')
             if char.isupper():
-                plaintext += chr((ord(char) - shift - 65) % 26 + 65)
+                pt += chr((ord(char) - shift - 65) % 26 + 65)
             else:
-                plaintext += chr((ord(char) - shift - 97) % 26 + 97)
+                pt += chr((ord(char) - shift - 97) % 26 + 97)
         else:
-            plaintext += char
-    return plaintext
+            pt += char
+    return pt
 
-ciphertext = '$vigenere_input'
+ct = '$vigenere_input'
 key = '$vigenere_key'
-print(vigenere_decrypt(ciphertext, key))
+print(vigenere_decrypt(ct, key))
 "
             ;;
         6)
